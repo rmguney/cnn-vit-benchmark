@@ -1,32 +1,44 @@
 import subprocess
-import sys
 import os
 
 def main():
     print("Select an option:")
     print("1. Initialize Dataset (CIFAR-10)")
     print("2. Test Dataset (CIFAR-10)")
-    print("3. Train MobileNet")
+    print("3. Train MobileNetV3S")
     print("4. Train DETR")
     print("5. Exit")
 
     choice = input("Enter the number of your choice: ")
 
-    # Get the Python interpreter being used
-    python_interpreter = sys.executable
-
     if choice == "1":
-        # Ensure the correct script path is used
-        subprocess.run([python_interpreter, os.path.join("src", "dataset", "initialize_dataset.py")])
+        subprocess.run(["python", "src/dataset/initialize_dataset.py"])
     elif choice == "2":
-        subprocess.run([python_interpreter, os.path.join("src", "dataset", "test_dataset.py")])
+        subprocess.run(["python", "src/dataset/test_dataset.py"])
     elif choice == "3":
-        print("MobileNet training script will be implemented next.")
+        # Prompt for training parameters
+        try:
+            epochs = int(input("Enter the number of epochs: "))
+            learning_rate = float(input("Enter the learning rate: "))
+            batch_size = int(input("Enter the batch size: "))
+            
+            # Pass parameters as environment variables
+            env = {
+                "EPOCHS": str(epochs),
+                "LEARNING_RATE": str(learning_rate),
+                "BATCH_SIZE": str(batch_size),
+            }
+            
+            subprocess.run(
+                ["python", "src/models/train_mobilenet.py"], 
+                env={**env, **os.environ}
+            )
+        except ValueError:
+            print("Invalid input. Please enter valid numbers for epochs, learning rate, and batch size.")
     elif choice == "4":
-        print("DETR training script will be implemented next.")
+        print("DETR training script not implemented yet.")
     elif choice == "5":
         print("Exiting...")
-        return
     else:
         print("Invalid choice. Please select a valid option.")
 

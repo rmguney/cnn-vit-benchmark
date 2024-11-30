@@ -2,45 +2,69 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-# Data for MobileNetV3
-mobilenet_metrics = {
-    "accuracy": 0.1282,
-    "top_5_accuracy": 0.5119,
-    "precision": 0.1001,
-    "recall": 0.1282,
-    "f1_score": 0.0538,
-    "mAP": 0.1703,
-    "latency": 0.0135,
-    "throughput": 73.99,
-}
-mobilenet_conf_matrix = np.array([
-    [980, 0, 0, 17, 0, 0, 3, 0, 0, 0],
-    [905, 0, 0, 92, 0, 0, 3, 0, 0, 0],
-    [911, 0, 1, 56, 0, 0, 32, 0, 0, 0],
-    [778, 0, 0, 217, 0, 0, 5, 0, 0, 0],
-    [844, 0, 1, 126, 0, 0, 28, 0, 0, 1],
-    [713, 0, 0, 251, 0, 0, 36, 0, 0, 0],
-    [626, 0, 0, 290, 0, 0, 84, 0, 0, 0],
-    [841, 0, 1, 129, 0, 0, 29, 0, 0, 0],
-    [995, 0, 0, 5, 0, 0, 0, 0, 0, 0],
-    [935, 0, 0, 63, 0, 0, 2, 0, 0, 0],
-])
-mobilenet_class_metrics = {
-    "precision": [0.11, 0.05, 0.33, 0.17, 0.04, 0.06, 0.38, 0.06, 0.03, 0.02],
-    "recall": [0.98, 0.01, 0.07, 0.22, 0.00, 0.02, 0.08, 0.01, 0.01, 0.00],
-    "f1_score": [0.20, 0.02, 0.12, 0.19, 0.00, 0.03, 0.13, 0.02, 0.01, 0.00],
-}
+# Function to plot class metrics
+def save_class_metrics_plot(metrics, title, save_path):
+    classes = [f"Class {i}" for i in range(10)]
+    x = np.arange(len(classes))
+    width = 0.25
 
-# Data for DeiT-T
+    plt.figure(figsize=(10, 6))
+    plt.bar(x - width, metrics["Precision"], width, label="Precision", color='lightblue')
+    plt.bar(x, metrics["Recall"], width, label="Recall", color='orange')
+    plt.bar(x + width, metrics["F1-Score"], width, label="F1-Score", color='green')
+
+    plt.xlabel("Classes", fontsize=12, color='white')
+    plt.ylabel("Scores", fontsize=12, color='white')
+    plt.title(title, fontsize=14, color='white')
+    plt.xticks(x, classes, rotation=45, fontsize=10, color='white')
+    plt.yticks(fontsize=10, color='white')
+    plt.legend(fontsize=10)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.gca().set_facecolor("#212121")
+    plt.gcf().set_facecolor("#212121")
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+# Function to plot confusion matrix
+def save_confusion_matrix_plot(conf_matrix, title, save_path):
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", cbar=False, xticklabels=[f"Class {i}" for i in range(10)], yticklabels=[f"Class {i}" for i in range(10)])
+    plt.xlabel("Predicted Labels", fontsize=12, color='white')
+    plt.ylabel("True Labels", fontsize=12, color='white')
+    plt.title(title, fontsize=14, color='white')
+    plt.xticks(fontsize=10, color='white')
+    plt.yticks(fontsize=10, color='white', rotation=0)
+    plt.gca().set_facecolor("#212121")
+    plt.gcf().set_facecolor("#212121")
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+# MobileNetV3-Large Metrics
+mobilenet_large_metrics = {
+    "Precision": [0.09, 0.12, 0.05, 0.11, 0.18, 0.00, 0.21, 0.13, 1.00, 0.00],
+    "Recall": [0.35, 0.00, 0.00, 0.62, 0.01, 0.00, 0.01, 0.02, 0.00, 0.00],
+    "F1-Score": [0.15, 0.01, 0.01, 0.18, 0.01, 0.00, 0.01, 0.04, 0.00, 0.00],
+}
+mobilenet_large_conf_matrix = np.array([
+    [355, 4, 10, 626, 2, 0, 0, 3, 0, 0],
+    [279, 3, 23, 657, 3, 1, 1, 33, 0, 0],
+    [452, 0, 4, 518, 8, 2, 3, 13, 0, 0],
+    [322, 4, 5, 623, 7, 3, 10, 26, 0, 0],
+    [477, 2, 3, 493, 6, 1, 2, 16, 0, 0],
+    [310, 1, 2, 663, 4, 0, 2, 18, 0, 0],
+    [697, 6, 2, 268, 2, 0, 6, 19, 0, 0],
+    [361, 2, 1, 609, 1, 0, 4, 22, 0, 0],
+    [200, 1, 11, 775, 1, 0, 1, 10, 1, 0],
+    [290, 3, 13, 685, 0, 0, 0, 9, 0, 0],
+])
+
+# DeiT-T Metrics
 deit_metrics = {
-    "accuracy": 0.7519,
-    "top_5_accuracy": 0.9818,
-    "precision": 0.7514,
-    "recall": 0.7519,
-    "f1_score": 0.7510,
-    "mAP": 0.8292,
-    "latency": 0.0222,
-    "throughput": 44.95,
+    "Precision": [0.73, 0.83, 0.71, 0.60, 0.70, 0.68, 0.80, 0.81, 0.84, 0.83],
+    "Recall": [0.80, 0.85, 0.63, 0.58, 0.74, 0.66, 0.84, 0.77, 0.86, 0.79],
+    "F1-Score": [0.76, 0.84, 0.67, 0.59, 0.72, 0.67, 0.82, 0.79, 0.85, 0.81],
 }
 deit_conf_matrix = np.array([
     [802, 21, 36, 12, 14, 5, 12, 8, 61, 29],
@@ -54,65 +78,11 @@ deit_conf_matrix = np.array([
     [70, 26, 8, 13, 3, 4, 3, 3, 856, 14],
     [38, 103, 3, 9, 8, 3, 11, 8, 25, 792],
 ])
-deit_class_metrics = {
-    "precision": [0.73, 0.83, 0.71, 0.60, 0.70, 0.68, 0.80, 0.81, 0.84, 0.83],
-    "recall": [0.80, 0.85, 0.63, 0.58, 0.74, 0.66, 0.84, 0.77, 0.86, 0.79],
-    "f1_score": [0.76, 0.84, 0.67, 0.59, 0.72, 0.67, 0.82, 0.79, 0.85, 0.81],
-}
 
-# Colors and Style
-plt.style.use('dark_background')
-bg_color = "#212121"
-text_color = "white"
+# Save MobileNetV3-Large plots
+save_class_metrics_plot(mobilenet_large_metrics, "MobileNetV3-Large Metrics", "mobilenet_large_metrics.png")
+save_confusion_matrix_plot(mobilenet_large_conf_matrix, "MobileNetV3-Large Confusion Matrix", "mobilenet_large_conf_matrix.png")
 
-# Save the confusion matrix plot
-fig1, axes = plt.subplots(1, 2, figsize=(14, 6), dpi=100)
-sns.heatmap(mobilenet_conf_matrix, annot=True, fmt='g', cmap='coolwarm', ax=axes[0], cbar=False)
-axes[0].set_title("MobileNet Confusion Matrix", color=text_color)
-sns.heatmap(deit_conf_matrix, annot=True, fmt='g', cmap='coolwarm', ax=axes[1], cbar=False)
-axes[1].set_title("DeiT-T Confusion Matrix", color=text_color)
-fig1.patch.set_facecolor(bg_color)
-for ax in axes:
-    ax.set_facecolor(bg_color)
-fig1.savefig("confusion_matrices.png", facecolor=bg_color)
-plt.close(fig1)
-
-# Save the class-wise metrics plot
-fig2, axes = plt.subplots(1, 3, figsize=(18, 6), dpi=100)
-x_labels = [f"Class {i}" for i in range(10)]
-metrics = ["precision", "recall", "f1_score"]
-titles = ["Precision by Class", "Recall by Class", "F1-Score by Class"]
-mobilenet_data = [mobilenet_class_metrics[m] for m in metrics]
-deit_data = [deit_class_metrics[m] for m in metrics]
-
-for i, ax in enumerate(axes):
-    ax.bar(x_labels, mobilenet_data[i], alpha=0.7, label="MobileNet")
-    ax.bar(x_labels, deit_data[i], alpha=0.7, label="DeiT-T")
-    ax.set_title(titles[i], color=text_color)
-    ax.legend()
-    ax.set_facecolor(bg_color)
-
-fig2.patch.set_facecolor(bg_color)
-fig2.savefig("class_metrics.png", facecolor=bg_color)
-plt.close(fig2)
-
-# Save the overall model metrics comparison plot
-fig3, ax = plt.subplots(figsize=(10, 6), dpi=100)
-overall_metrics = ["accuracy", "top_5_accuracy", "precision", "recall", "f1_score", "mAP", "latency", "throughput"]
-mobilenet_overall = [mobilenet_metrics[m] for m in overall_metrics]
-deit_overall = [deit_metrics[m] for m in overall_metrics]
-x_labels = ["Accuracy", "Top-5 Accuracy", "Precision", "Recall", "F1-Score", "mAP", "Latency", "Throughput"]
-
-x = np.arange(len(x_labels))
-width = 0.35
-ax.bar(x - width / 2, mobilenet_overall, width, label="MobileNet")
-ax.bar(x + width / 2, deit_overall, width, label="DeiT-T")
-ax.set_xticks(x)
-ax.set_xticklabels(x_labels, rotation=45, ha="right")
-ax.legend()
-ax.set_facecolor(bg_color)
-fig3.patch.set_facecolor(bg_color)
-fig3.savefig("overall_metrics.png", facecolor=bg_color)
-plt.close(fig3)
-
-print("Plots saved as: 'confusion_matrices.png', 'class_metrics.png', 'overall_metrics.png'")
+# Save DeiT-T plots
+save_class_metrics_plot(deit_metrics, "DeiT-T Metrics", "deit_metrics.png")
+save_confusion_matrix_plot(deit_conf_matrix, "DeiT-T Confusion Matrix", "deit_conf_matrix.png")

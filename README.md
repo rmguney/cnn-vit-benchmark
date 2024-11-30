@@ -1,10 +1,6 @@
-# Comparative Analysis of MobileNet and DeiT
+# Comparative Analysis of DeiT and MobileNet
 
-## Overview
-
-This project explores a comparative analysis between two deep learning models, **MobileNetV3** and **DeiT (Data-efficient Image Transformer)**, focusing on their architectures, training methodologies, and performance benchmarks. The models are trained on the CIFAR-10 dataset for image classification tasks.
-
----
+This project explores a comparative analysis between two deep learning models, **DeiT (Data-efficient Image Transformer)** and **MobileNetV3**, focusing on their architectures, training methodologies, and performance benchmarks. The models are trained on the CIFAR-10 dataset for image classification tasks.
 
 ## Usage
 
@@ -26,8 +22,6 @@ When prompted, specify the following hyperparameters:
 - **Enter learning rate**: Example: `0.001`
 - **Enter batch size**: Example: `32`
 
----
-
 ## Model Aspects
 
 ### Neural Network Architecture
@@ -45,8 +39,6 @@ When prompted, specify the following hyperparameters:
 ### Normalization Techniques
 - **DeiT**: Layer Norm for stabilizing training in sequential transformer architectures.
 - **MobileNetV3**: Batch Norm for accelerating convergence in CNNs.
-
----
 
 ## Training Methodology
 
@@ -90,15 +82,9 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
   )
   ```
 
----
-
 ## Results and Performance Benchmarks
 
 Performance metrics, including loss, precision, recall, and F1 scores, are evaluated for both models. The results help determine which model is better suited for tasks involving image classification, especially considering the trade-offs between efficiency and accuracy.
 
----
-
 ## License
 This project is open-source and available under the MIT License.
-
----

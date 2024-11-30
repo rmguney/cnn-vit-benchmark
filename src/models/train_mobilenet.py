@@ -13,15 +13,15 @@ from torchmetrics.classification import (
 )
 import numpy as np
 from pytorch_lightning import seed_everything
-from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
+from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
 import time
 
 
-class MobileNetV3S(pl.LightningModule):
+class MobileNetV3L(pl.LightningModule):
     def __init__(self, num_classes=10, learning_rate=0.001):
         super().__init__()
         self.save_hyperparameters()
-        self.model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT)
+        self.model = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.DEFAULT)
         self.model.classifier[3] = torch.nn.Linear(self.model.classifier[3].in_features, num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.learning_rate = learning_rate
@@ -166,7 +166,7 @@ def main():
     )
 
     # Initialize model
-    model = MobileNetV3S(num_classes=10, learning_rate=learning_rate)
+    model = MobileNetV3L(num_classes=10, learning_rate=learning_rate)
 
     # Callbacks
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -174,16 +174,16 @@ def main():
         monitor="val_map",
         mode="max",
         dirpath=saved_models_dir,
-        filename=f"MobileNetV3S_{current_time}_best",
+        filename=f"MobileNetV3L_{current_time}_best",
         save_top_k=1
     )
     checkpoint_callback_epoch = ModelCheckpoint(
         every_n_epochs=1,
         dirpath=saved_models_dir,
-        filename=f"MobileNetV3S_{current_time}_epoch{{epoch}}"
+        filename=f"MobileNetV3L_{current_time}_epoch{{epoch}}"
     )
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
-    csv_logger = CSVLogger(logs_dir, name=f"MobileNetV3S_{current_time}")
+    csv_logger = CSVLogger(logs_dir, name=f"MobileNetV3L_{current_time}")
 
     # Trainer
     start_time = time.time()

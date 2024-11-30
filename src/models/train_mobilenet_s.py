@@ -13,28 +13,18 @@ from torchmetrics.classification import (
 )
 import numpy as np
 from pytorch_lightning import seed_everything
-from transformers import AutoModelForImageClassification
+from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
 import time
-import csv
 
 
-class DeiTTinyForClassification(pl.LightningModule):
+class MobileNetV3S(pl.LightningModule):
     def __init__(self, num_classes=10, learning_rate=0.001):
         super().__init__()
         self.save_hyperparameters()
-
-        # Save the learning rate as a class attribute
-        self.learning_rate = learning_rate
-
-        # Load DeiT-Tiny from Hugging Face
-        self.model = AutoModelForImageClassification.from_pretrained(
-            "facebook/deit-tiny-patch16-224", 
-            num_labels=num_classes,
-            ignore_mismatched_sizes=True  # Ignore size mismatch in the classifier layer
-        )
-
-        # Cross-entropy loss for classification
+        self.model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT)
+        self.model.classifier[3] = torch.nn.Linear(self.model.classifier[3].in_features, num_classes)
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.learning_rate = learning_rate
 
         # Metrics
         self.precision = MulticlassPrecision(num_classes=num_classes, average=None)
@@ -47,7 +37,7 @@ class DeiTTinyForClassification(pl.LightningModule):
         self.grad_norm_values = []
 
     def forward(self, x):
-        return self.model(x).logits  # Only return class logits
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -134,7 +124,6 @@ class DeiTTinyForClassification(pl.LightningModule):
 # Prepare CIFAR-10 dataset
 def prepare_data(data_dir="data/cifar10"):
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize images to 224x224
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
@@ -146,6 +135,7 @@ def prepare_data(data_dir="data/cifar10"):
 
 
 def main():
+    # Setup directories
     saved_models_dir = "saved_models"
     logs_dir = "logs"
     os.makedirs(saved_models_dir, exist_ok=True)
@@ -176,7 +166,7 @@ def main():
     )
 
     # Initialize model
-    model = DeiTTinyForClassification(num_classes=10, learning_rate=learning_rate)
+    model = MobileNetV3S(num_classes=10, learning_rate=learning_rate)
 
     # Callbacks
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -184,24 +174,16 @@ def main():
         monitor="val_map",
         mode="max",
         dirpath=saved_models_dir,
-        filename=f"DeiTTinyForClassification_{current_time}_best",
+        filename=f"MobileNetV3S_{current_time}_best",
         save_top_k=1
     )
     checkpoint_callback_epoch = ModelCheckpoint(
         every_n_epochs=1,
         dirpath=saved_models_dir,
-        filename=f"DeiTTinyForClassification_{current_time}_epoch{{epoch}}"
+        filename=f"MobileNetV3S_{current_time}_epoch{{epoch}}"
     )
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
-    csv_logger = CSVLogger(logs_dir, name=f"DeiTTinyForClassification_{current_time}")
-
-    # Create a CSV to store metrics
-    csv_metrics = ['epoch', 'train_loss', 'train_precision', 'train_recall', 'train_f1', 'train_map', 
-                   'val_loss', 'val_precision', 'val_recall', 'val_f1', 'val_map', 
-                   'grad_norm', 'avg_grad_norm', 'learning_rate']
-    with open(os.path.join(logs_dir, f"metrics_{current_time}.csv"), mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(csv_metrics)
+    csv_logger = CSVLogger(logs_dir, name=f"MobileNetV3S_{current_time}")
 
     # Trainer
     start_time = time.time()
@@ -210,11 +192,9 @@ def main():
         callbacks=[checkpoint_callback, checkpoint_callback_epoch, lr_monitor],
         logger=csv_logger,
         log_every_n_steps=10,
-                accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
         devices=1
     )
-    
-    # Start training
     trainer.fit(model, train_loader, val_loader)
     training_time = time.time() - start_time
 
@@ -222,34 +202,7 @@ def main():
     csv_logger.log_hyperparams({"training_time": training_time})
     print(f"Training completed in {training_time:.2f} seconds")
 
-    # After training, gather and save metrics to CSV
-    with open(os.path.join(logs_dir, f"metrics_{current_time}.csv"), mode='a', newline='') as file:
-        writer = csv.writer(file)
-
-        for epoch in range(epochs):
-            # Get the logged metrics for each epoch
-            train_loss = trainer.callback_metrics.get('train_loss', 0)
-            train_precision = trainer.callback_metrics.get('train_precision', 0)
-            train_recall = trainer.callback_metrics.get('train_recall', 0)
-            train_f1 = trainer.callback_metrics.get('train_f1', 0)
-            train_map = trainer.callback_metrics.get('train_map', 0)
-
-            val_loss = trainer.callback_metrics.get('val_loss', 0)
-            val_precision = trainer.callback_metrics.get('val_precision', 0)
-            val_recall = trainer.callback_metrics.get('val_recall', 0)
-            val_f1 = trainer.callback_metrics.get('val_f1', 0)
-            val_map = trainer.callback_metrics.get('val_map', 0)
-
-            grad_norm = trainer.callback_metrics.get('grad_norm', 0)
-            avg_grad_norm = trainer.callback_metrics.get('avg_grad_norm', 0)
-            learning_rate = trainer.callback_metrics.get('lr-Adam', 0)
-
-            # Write the metrics of each epoch to CSV
-            writer.writerow([epoch, train_loss, train_precision, train_recall, train_f1, train_map, 
-                             val_loss, val_precision, val_recall, val_f1, val_map, 
-                             grad_norm, avg_grad_norm, learning_rate])
-
 
 if __name__ == "__main__":
     main()
-
+    

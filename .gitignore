@@ -45,5 +45,5 @@ saved_models/
 .env
 
 logs/
-
 check.py
+*.png

@@ -157,17 +157,20 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     test_loader = load_test_dataset()
 
-    # Define MobileNetV3 architecture using torchvision
-    class MobileNetV3(torch.nn.Module):
+    # Define MobileNetV3 architecture from hugging face
+    class MobilenetModel(torch.nn.Module):
         def __init__(self, num_classes=10):
             super().__init__()
-            self.model = models.mobilenet_v3_large(pretrained=True)
-            self.model.classifier[3] = torch.nn.Linear(self.model.classifier[3].in_features, num_classes)
+            self.model = AutoModelForImageClassification.from_pretrained(
+                "AiresPucrs/Mobilenet-v2-CIFAR-10",
+                num_labels=num_classes,
+                ignore_mismatched_sizes=True,
+            )
 
         def forward(self, x):
-            return self.model(x)
+            return self.model(x).logits  # Extract logits from the Hugging Face model output
 
-    mobilenet_model = MobileNetV3(num_classes=10)
+    mobilenet_model = MobilenetModel(num_classes=10)
 
     # Define DeiT-T architecture
     class DeiTModel(torch.nn.Module):
@@ -185,7 +188,7 @@ def main():
     deit_model = DeiTModel(num_classes=10)
 
     # Load state_dict from checkpoint
-    mobilenet_model_path = './saved_models/MobileNetV3L_2024-11-30_17-12-28_best.ckpt'
+    mobilenet_model_path = './saved_models/MobileNetV2CIFAR10_2024-12-01_00-11-05_best.ckpt'
     deit_model_path = './saved_models/DeiTTinyForClassification_2024-11-27_22-38-14_best.ckpt'
 
     mobilenet_checkpoint = torch.load(mobilenet_model_path, map_location=device)
@@ -203,8 +206,8 @@ def main():
     logger = CSVLogger(save_dir="./logs", name="benchmark_logs")
 
     # Benchmark MobileNet
-    print("\nBenchmarking MobileNet...")
-    mobilenet_benchmark = BenchmarkModel(mobilenet_model, test_loader, "MobileNetV3-Large")
+    print("\nBenchmarking MobileNetV2...")
+    mobilenet_benchmark = BenchmarkModel(mobilenet_model, test_loader, "MobileNetV2")
     trainer = Trainer(logger=logger, accelerator=device, devices=1, max_epochs=1)
     trainer.test(mobilenet_benchmark, test_loader)
     mobilenet_benchmark.benchmark_speed(device)

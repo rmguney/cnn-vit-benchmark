@@ -1,10 +1,14 @@
-# Comparative Analysis of DeiT and MobileNet
+# Comparative Analysis of MobileNet and DeiT-T on the CIFAR-10 Dataset
 
-This project explores a comparative analysis between two deep learning models, **DeiT (Data-efficient Image Transformer)** and **MobileNetV3**, focusing on their architectures, training methodologies, and performance benchmarks. The models are trained on the CIFAR-10 dataset for image classification tasks.
+## Overview
+
+This project examines and compares the performance of **MobileNetV3-L** and **DeiT-T (Data-efficient Image Transformer)**, a transformer-based vision model.
+The aim is to compare the performance of a relatively lightweight vision transformer model to CNN models for resource constrained environments.
+Tests were done with 3 different **MobileNet** models including **MobileNet V2, MobileNetV3-S, MobileNetV3-L**, but taking **MobileNetV3-L** as the baseline since most metrics had similar results and in terms of model size it is more comparable to **DeiT-T**.
 
 ## Usage
 
-The `main.py` script provides a menu-driven interface for running different experiments.
+The `main.py` script serves as CLI for running the scripts available in this project.
 
 ```bash
 python main.py
@@ -13,9 +17,12 @@ python main.py
 Select an option from the menu:
 1. **Initialize Dataset (CIFAR-10)**: Initialize the dataset.
 2. **Test Dataset (CIFAR-10)**: Evaluate the dataset and preprocessing pipeline.
-3. **Train Train MobileNetV3S**: Train MobileNetV3 with user-specified hyperparameters.
-4. **Train DeiT-T**: Train DeiT with user-specified hyperparameters.
-5. **Exit**: Exits the interface.
+3. **Train DeiT-T**: Train DeiT-T with user-specified hyperparameters.
+4. **Train Train MobileNetV3S**: Train MobileNetV3 with user-specified hyperparameters.
+5. **Train Train MobileNetV3L**: Train MobileNetV3L with user-specified hyperparameters.
+6. **Train Train MobileNetV2**: Train MobileNetV2 with user-specified hyperparameters.
+7. **Benchmark Models**: Benchmark best performing checkpoints of the models from the training.
+8. **Exit**: Exits the interface.
 
 When prompted, specify the following hyperparameters:
 - **Enter number of epochs**: Example: `10`
@@ -24,67 +31,72 @@ When prompted, specify the following hyperparameters:
 
 ## Model Aspects
 
-### Neural Network Architecture
-- **DeiT**: Vision Transformer that processes image data by dividing it into patches and modeling their relationships using self-attention mechanisms.
-- **MobileNetV3**: Convolutional Neural Network optimized for efficiency using localized convolution operations.
+### **MobileNetV3-L**
+- **Architecture:** Convolutional Neural Network (CNN).
+- **Key Building Blocks:**
+  - Depthwise separable convolutions.
+  - Lightweight fully connected layers.
+- **Activation Function:** Hard-swish (efficient for mobile devices).
+- **Normalization:** Batch normalization.
 
-### Key Building Blocks
-- **DeiT**: Transformer Encoder leveraging self-attention for understanding relationships between image regions.
-- **MobileNetV3**: Depthwise Separable Convolutions and MLP layers for efficient feature extraction.
-
-### Activation Functions
-- **DeiT**: GELU (Gaussian Error Linear Unit) for smoother and more complex learning.
-- **MobileNetV3**: Hard-Swish for computational efficiency, making it suitable for mobile devices.
-
-### Normalization Techniques
-- **DeiT**: Layer Norm for stabilizing training in sequential transformer architectures.
-- **MobileNetV3**: Batch Norm for accelerating convergence in CNNs.
+### **DeiT-T (Vision Transformer)**
+- **Architecture:** Transformer-based model that processes image patches.
+- **Key Building Blocks:**
+  - Self-attention mechanism.
+  - Transformer encoder.
+  - Class and distillation tokens.
+- **Activation Function:** GELU (Gaussian Error Linear Unit).
+- **Normalization:** Layer normalization.
 
 ## Training Methodology
 
-### Optimizer and Loss Function
-- **Optimizer**: Adam optimizer.
-- **Loss Function**: Cross-Entropy Loss for multi-class classification.
+### Dataset
+- **CIFAR-10:** Contains 60,000 32x32 color images across 10 classes.
+- Data normalized with a mean and standard deviation of `(0.5, 0.5, 0.5)`.
 
-### Learning Rate Scheduler
-A StepLR scheduler adjusts the learning rate to ensure stable convergence:
-```python
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-```
+### Parameters
+- **Optimizer:** Adam.
+- **Learning Rate Scheduler:** StepLR with `step_size=10` and `gamma=0.1`.
+- **Epochs:** 20.
+- **Batch Size:** 32.
 
-### Default Training Parameters
-- **Epochs**: Configurable via `main.py` menu.
-- **Learning Rate**: Configurable via `main.py` menu.
-- **Batch Size**: 32 (fixed).
+### Validation
+- Dataset split into 80% training and 20% validation.
+- Metrics such as precision, recall, and F1-score were logged for analysis.
 
-### Dataset and Preprocessing
-- **Dataset**: CIFAR-10, containing 60,000 32x32 color images across 10 classes.
-- **Split**: 80% training, 20% validation.
-- **Normalization**: Mean and standard deviation of (0.5, 0.5, 0.5):
-  ```python
-  transform = transforms.Compose([
-      transforms.Resize((224, 224)),
-      transforms.ToTensor(),
-      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-  ])
-  ```
+## Training Results
 
-### Metrics and Checkpointing
-- Metrics like loss, precision, recall, F1 score, and mAP (mean Average Precision) are logged for model evaluation.
-- Best-performing models are saved using a callback mechanism:
-  ```python
-  checkpoint_callback = ModelCheckpoint(
-      monitor="val_map",
-      mode="max",
-      dirpath="saved_models/",
-      filename="best_model"
-  )
-  ```
+### DeiT-T
+- Training loss decreased consistently, but validation loss increased after 11 epochs, indicating overfitting.
+- Achieved high precision, recall, and F1-score on training data but struggled with generalization post epoch 11.
 
-## Results and Performance Benchmarks
+### MobileNetV3-L
+- Training loss reduced steadily, but validation loss showed signs of overfitting early.
+- Suffered from low precision and recall, reflecting difficulty in learning complex patterns.
 
-Performance metrics, including loss, precision, recall, and F1 scores, are evaluated for both models. The results help determine which model is better suited for tasks involving image classification, especially considering the trade-offs between efficiency and accuracy.
+## Performance Benchmarks
 
-## License
-This project is open-source and available under the MIT License.
+| Metric         | MobileNetV3-L | DeiT-T  | Insights                                                                 |
+|----------------|-------------|---------|--------------------------------------------------------------------------|
+| **Accuracy**   | 12.9%       | 75.2%   | DeiT-T outperforms in accuracy.                                          |
+| **Top-5 Accuracy** | 52.5%       | 98.2%   | DeiT-T reliably predicts within the top-5 outputs.                      |
+| **Precision**  | 10.0%       | 75.1%   | MobileNet has many false positives, while DeiT-T is precise.            |
+| **Recall**     | 12.8%       | 75.2%   | MobileNet fails to capture true positives effectively.                  |
+| **F1 Score**   | 5.4%        | 75.1%   | Reflects DeiT-T's superior balance between precision and recall.        |
+| **mAP**        | 17.0%       | 82.9%   | DeiT-T ranks predictions well across all classes.                       |
+| **Latency**    | 13.4ms      | 22.2ms  | MobileNet is faster, suitable for real-time applications.               |
+| **Throughput** | 74.52 img/s | 44.95 img/s | MobileNet processes more images due to its lightweight architecture.   |
+
+### Key Observations
+- **DeiT-T**: Dominates in accuracy metrics, making it ideal for high-quality applications.
+- **MobileNetV3-L**: Excels in latency and throughput, better suited for low-power or real-time systems.
+
+## Confusion Matrix Insights
+
+### DeiT-T
+- Higher precision and recall across all classes.
+- Misclassifications are minimal and dispersed.
+
+### MobileNetV3-L
+- Strong bias towards predicting specific classes, resulting in high misclassification rates.
+- Poor performance in predicting several classes.

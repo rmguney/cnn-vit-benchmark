@@ -1,9 +1,8 @@
-# Re-import necessary libraries after environment reset
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the uploaded CSV file
-metrics_file_path = '/mnt/data/metrics.csv'
+metrics_file_path = '../logs/MobileNetV2CIFAR10_2024-12-01_00-11-05/version_0/metrics.csv'
 metrics_data = pd.read_csv(metrics_file_path)
 
 # Filter rows for training and validation based on the presence of metrics

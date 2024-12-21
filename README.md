@@ -1,6 +1,6 @@
 ## Overview
 
-This project examines and compares the performance of lightweight Vision Transformers to CNNs with similar sizes. 
+This project examines and compares the performance of lightweight vision transformers to convolutional neural networks with similar sizes. 
 The `main.py` script serves as CLI for running the scripts available in this project.
 
 ```bash

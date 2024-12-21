@@ -1,8 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+
+output_dir = 'C:/code/583 Computer Vision/classification/plots/output/'
+os.makedirs(output_dir, exist_ok=True)
 
 # Load the uploaded CSV file
-metrics_file_path = '../logs/MobileNetV2CIFAR10_2024-12-01_00-11-05/version_0/metrics.csv'
+metrics_file_path = '../logs/EfficientNetB0ForClassification_2024-12-21_10-47-18/version_0/metrics.csv'
 metrics_data = pd.read_csv(metrics_file_path)
 
 # Filter rows for training and validation based on the presence of metrics
@@ -22,6 +26,8 @@ val_f1 = val_rows['val_f1']
 train_map = train_rows['train_map']
 val_map = val_rows['val_map']
 grad_norm = train_rows['grad_norm']
+avg_grad_norm = train_rows.get('avg_grad_norm', pd.Series([None] * len(train_rows)))
+class_0_ap = val_rows.get('class_0_ap', pd.Series([None] * len(val_rows)))
 epochs = train_rows['epoch'].reset_index(drop=True) + 1
 
 # Define custom plotting style
@@ -44,9 +50,6 @@ def custom_plot_style_with_larger_figsize():
 
 # Apply the updated style
 custom_plot_style_with_larger_figsize()
-
-# Output directory
-output_dir = '/mnt/data/'
 
 # Generate and save plots with larger styling
 # Training and Validation Loss
@@ -114,15 +117,22 @@ plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_gradient_norm_larger.png", facecolor='#212121')
 plt.close()
 
-# Provide the updated files for download
-larger_plot_files = [
-    "metrics_training_validation_loss_larger.png",
-    "metrics_precision_larger.png",
-    "metrics_recall_larger.png",
-    "metrics_f1_score_larger.png",
-    "metrics_map_larger.png",
-    "metrics_gradient_norm_larger.png",
-]
+# Average Gradient Norm
+plt.figure(figsize=(12, 8))  # Larger figure size
+plt.plot(epochs, avg_grad_norm, marker='o', linestyle='-', label="Average Gradient Norm")
+plt.xlabel("Epochs")
+plt.ylabel("Average Gradient Norm")
+plt.legend()
+plt.tight_layout()
+plt.savefig(f"{output_dir}metrics_avg_grad_norm_larger.png", facecolor='#212121')
+plt.close()
 
-larger_plot_file_paths = [f"{output_dir}{file}" for file in larger_plot_files]
-larger_plot_file_paths
+# Class 0 AP
+plt.figure(figsize=(12, 8))  # Larger figure size
+plt.plot(epochs, class_0_ap, marker='o', linestyle='-', label="Class 0 AP")
+plt.xlabel("Epochs")
+plt.ylabel("Class 0 AP")
+plt.legend()
+plt.tight_layout()
+plt.savefig(f"{output_dir}metrics_class_0_ap_larger.png", facecolor='#212121')
+plt.close()

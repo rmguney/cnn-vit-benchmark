@@ -7,7 +7,8 @@ import os
 import time
 import numpy as np
 from transformers import AutoModelForImageClassification
-
+from torchvision.models import efficientnet_b0
+import json
 
 class BenchmarkModel(LightningModule):
     def __init__(self, model, test_loader, model_name):
@@ -37,10 +38,13 @@ class BenchmarkModel(LightningModule):
 
         # Calculate metrics
         accuracy = accuracy_score(all_labels, all_preds)
-        top5_accuracy = (all_labels.unsqueeze(1) == torch.topk(all_probs, k=5, dim=1)[1]).sum().item() / len(all_labels)
-        precision = precision_score(all_labels, all_preds, average="weighted")
-        recall = recall_score(all_labels, all_preds, average="weighted")
-        f1 = f1_score(all_labels, all_preds, average="weighted")
+        top5_accuracy = None
+        if all_probs.size(1) >= 5:
+            top5_accuracy = (all_labels.unsqueeze(1) == torch.topk(all_probs, k=5, dim=1)[1]).sum().item() / len(all_labels)
+
+        precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0)
+        recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0)
+        f1 = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
         conf_matrix = confusion_matrix(all_labels, all_preds)
 
         # Class-wise metrics
@@ -65,7 +69,8 @@ class BenchmarkModel(LightningModule):
         # Print results
         print(f"\nResults for {self.model_name}:")
         print(f"Accuracy: {accuracy:.4f}")
-        print(f"Top-5 Accuracy: {top5_accuracy:.4f}")
+        if top5_accuracy is not None:
+            print(f"Top-5 Accuracy: {top5_accuracy:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
         print(f"F1 Score: {f1:.4f}")
@@ -86,6 +91,10 @@ class BenchmarkModel(LightningModule):
             # Get true binary labels and predicted probabilities for class c
             true_labels = (labels == c).astype(int)
             predicted_probs = probs[:, c]
+
+            if np.sum(true_labels) == 0:  # No positive samples for this class
+                aps.append(0)
+                continue
 
             # Sort by predicted probability
             sorted_indices = np.argsort(-predicted_probs)
@@ -157,21 +166,6 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     test_loader = load_test_dataset()
 
-    # Define MobileNetV3 architecture from HuggingFace
-    class MobilenetModel(torch.nn.Module):
-        def __init__(self, num_classes=10):
-            super().__init__()
-            self.model = AutoModelForImageClassification.from_pretrained(
-                "AiresPucrs/Mobilenet-v2-CIFAR-10",
-                num_labels=num_classes,
-                ignore_mismatched_sizes=True,
-            )
-
-        def forward(self, x):
-            return self.model(x).logits  # Extract logits from Hugging Face model output
-
-    mobilenet_model = MobilenetModel(num_classes=10)
-
     # Define DeiT-T architecture
     class DeiTModel(torch.nn.Module):
         def __init__(self, num_classes=10):
@@ -185,46 +179,58 @@ def main():
         def forward(self, x):
             return self.model(x).logits  # Extract logits from Hugging Face model output
 
+    # Define EfficientNet-B0 architecture
+    class EfficientNetB0Model(torch.nn.Module):
+        def __init__(self, num_classes=10):
+            super().__init__()
+            self.model = efficientnet_b0(pretrained=True)
+            self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
+
+        def forward(self, x):
+            return self.model(x)
+
     deit_model = DeiTModel(num_classes=10)
+    efficientnet_model = EfficientNetB0Model(num_classes=10)
 
     # Load state_dict from checkpoint
-    mobilenet_model_path = './saved_models/MobileNetV2CIFAR10_2024-12-01_00-11-05_best.ckpt'
     deit_model_path = './saved_models/DeiTTinyForClassification_2024-11-27_22-38-14_best.ckpt'
+    efficientnet_model_path = './saved_models/EfficientNetB0ForClassification_2024-12-21_10-47-18_best.ckpt'
 
-    mobilenet_checkpoint = torch.load(mobilenet_model_path, map_location=device)
     deit_checkpoint = torch.load(deit_model_path, map_location=device)
+    efficientnet_checkpoint = torch.load(efficientnet_model_path, map_location=device)
 
     # Load weights into the models
-    mobilenet_model.load_state_dict(mobilenet_checkpoint["state_dict"])
     deit_model.load_state_dict(deit_checkpoint["state_dict"])
+    efficientnet_model.load_state_dict(efficientnet_checkpoint["state_dict"])
 
     # Send models to device
-    mobilenet_model.to(device)
     deit_model.to(device)
+    efficientnet_model.to(device)
 
     # Initialize CSV Logger
     logger = CSVLogger(save_dir="./logs", name="benchmark_logs")
 
-    # Benchmark MobileNet
-    print("\nBenchmarking MobileNetV2...")
-    mobilenet_benchmark = BenchmarkModel(mobilenet_model, test_loader, "MobileNetV2")
-    trainer = Trainer(logger=logger, accelerator=device, devices=1, max_epochs=1)
-    trainer.test(mobilenet_benchmark, test_loader)
-    mobilenet_benchmark.benchmark_speed(device)
-
     # Benchmark DeiT
     print("\nBenchmarking DeiT...")
     deit_benchmark = BenchmarkModel(deit_model, test_loader, "DeiT-T")
+    trainer = Trainer(logger=logger, accelerator=device, devices=1, max_epochs=1)
     trainer.test(deit_benchmark, test_loader)
     deit_benchmark.benchmark_speed(device)
+
+    # Benchmark EfficientNet-B0
+    print("\nBenchmarking EfficientNet-B0...")
+    efficientnet_benchmark = BenchmarkModel(efficientnet_model, test_loader, "EfficientNet-B0")
+    trainer.test(efficientnet_benchmark, test_loader)
+    efficientnet_benchmark.benchmark_speed(device)
 
     # Save results to a human-readable file
     results_path = "./logs/extended_benchmark_results.txt"
     with open(results_path, "w") as f:
-        for result in [mobilenet_benchmark.results, deit_benchmark.results]:
+        for result in [deit_benchmark.results, efficientnet_benchmark.results]:
             f.write(f"Model: {result['model']}\n")
             f.write(f"Accuracy: {result['accuracy']:.4f}\n")
-            f.write(f"Top-5 Accuracy: {result['top5_accuracy']:.4f}\n")
+            if result['top5_accuracy'] is not None:
+                f.write(f"Top-5 Accuracy: {result['top5_accuracy']:.4f}\n")
             f.write(f"Precision: {result['precision']:.4f}\n")
             f.write(f"Recall: {result['recall']:.4f}\n")
             f.write(f"F1 Score: {result['f1_score']:.4f}\n")
@@ -236,7 +242,6 @@ def main():
             f.write("\n")
 
     print(f"\nBenchmark results saved to: {results_path}")
-
 
 if __name__ == '__main__':
     main()

@@ -11,8 +11,10 @@ def main():
     print("4. Train MobileNetV3S")
     print("5. Train MobileNetV3L")
     print("6. Train MobileNetV2")
-    print("7. Benchmark Models")
-    print("8. Exit")
+    print("7. Train EfficientNet-B0")
+    print("8. Benchmark Models")
+
+    print("9. Exit")
 
     choice = input("Enter the number of your choice: ")
     
@@ -55,9 +57,17 @@ def main():
         os.environ["BATCH_SIZE"] = batch_size
         subprocess.run([python_executable, "src/models/train_mobilenet_v2.py"], env=os.environ)
     elif choice == "7":
+        epochs = input("Enter the number of epochs: ")
+        learning_rate = input("Enter the learning rate: ")
+        batch_size = input("Enter the batch size: ")
+        os.environ["EPOCHS"] = epochs
+        os.environ["LEARNING_RATE"] = learning_rate
+        os.environ["BATCH_SIZE"] = batch_size
+        subprocess.run([python_executable, "src/models/train_effnet.py"], env=os.environ)
+    elif choice == "8":
         print("Benchmarking Models...")
         subprocess.run([python_executable, "src/models/benchmark_models.py"], env=os.environ)
-    elif choice == "8":
+    elif choice == "9":
         print("Exiting...")
         exit()
     else:

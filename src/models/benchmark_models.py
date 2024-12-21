@@ -1,5 +1,5 @@
 import torch
-from torchvision import datasets, transforms, models
+from torchvision import datasets, transforms
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.loggers import CSVLogger
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
@@ -157,7 +157,7 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     test_loader = load_test_dataset()
 
-    # Define MobileNetV3 architecture from hugging face
+    # Define MobileNetV3 architecture from HuggingFace
     class MobilenetModel(torch.nn.Module):
         def __init__(self, num_classes=10):
             super().__init__()
@@ -168,7 +168,7 @@ def main():
             )
 
         def forward(self, x):
-            return self.model(x).logits  # Extract logits from the Hugging Face model output
+            return self.model(x).logits  # Extract logits from Hugging Face model output
 
     mobilenet_model = MobilenetModel(num_classes=10)
 

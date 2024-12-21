@@ -13,18 +13,25 @@ from torchmetrics.classification import (
 )
 import numpy as np
 from pytorch_lightning import seed_everything
-from transformers import AutoModelForImageClassification, AutoImageProcessor
 import time
+from network import MobileNetV2
 
+# Dynamically resolve the path to the weights file
+weights_path = os.path.join(os.path.dirname(__file__), "../../saved_models/weights.pkl")
+weights_path = os.path.abspath(weights_path)
 
 class MobileNetV2CIFAR10(pl.LightningModule):
-    def __init__(self, num_classes=10, learning_rate=0.001):
+    def __init__(self, num_classes=10, learning_rate=0.1):
         super().__init__()
         self.save_hyperparameters()
 
-        # Load pretrained MobileNetV2 for CIFAR-10
-        model_name = "AiresPucrs/Mobilenet-v2-CIFAR-10"
-        self.model = AutoModelForImageClassification.from_pretrained(model_name)
+        # Load MobileNetV2 architecture
+        self.model = MobileNetV2(output_size=num_classes, alpha=1)
+
+        # Load pretrained weights from the repository
+        state_dict = torch.load(weights_path, map_location=torch.device('cpu'))
+        new_state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+        self.model.load_state_dict(new_state_dict)
 
         # Loss function
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -41,7 +48,7 @@ class MobileNetV2CIFAR10(pl.LightningModule):
         self.grad_norm_values = []
 
     def forward(self, x):
-        return self.model(x).logits  # Extract logits from Hugging Face model output
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -114,25 +121,24 @@ class MobileNetV2CIFAR10(pl.LightningModule):
 
     def on_train_epoch_end(self):
         # Log average gradient norm for the epoch
-        if self.grad_norm_values:  # Ensure there are values to average
+        if self.grad_norm_values:
             avg_grad_norm = np.mean(self.grad_norm_values)
             self.log("avg_grad_norm", avg_grad_norm, on_epoch=True)
-            self.grad_norm_values = []  # Clear the list for the next epoch
+            self.grad_norm_values = []
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.9, weight_decay=4e-5)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=300)
         return [optimizer], [scheduler]
 
 
 # Prepare CIFAR-10 dataset
 def prepare_data(data_dir="data/cifar10"):
-    # Use preprocessing as per the pretrained model's requirements
-    processor = AutoImageProcessor.from_pretrained("AiresPucrs/Mobilenet-v2-CIFAR-10")
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Resize images to 224x224
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=processor.image_mean, std=processor.image_std),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))
     ])
     dataset = datasets.CIFAR10(root=data_dir, train=True, download=True, transform=transform)
     train_len = int(len(dataset) * 0.8)
@@ -149,31 +155,19 @@ def main():
     os.makedirs(logs_dir, exist_ok=True)
 
     # Read training parameters from environment variables, or use default values
-    epochs = int(os.getenv("EPOCHS", 10)) 
-    learning_rate = float(os.getenv("LEARNING_RATE", 0.001)) 
-    batch_size = int(os.getenv("BATCH_SIZE", 32)) 
+    epochs = int(os.getenv("EPOCHS", 300))
+    batch_size = int(os.getenv("BATCH_SIZE", 128))
 
     # Seed everything for reproducibility
     seed_everything(42, workers=True)
 
     # Dataset and DataLoader
     train_dataset, val_dataset = prepare_data()
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=4,
-        persistent_workers=True
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        num_workers=4,
-        persistent_workers=True
-    )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=4)
 
     # Initialize model
-    model = MobileNetV2CIFAR10(num_classes=10, learning_rate=learning_rate)
+    model = MobileNetV2CIFAR10()
 
     # Callbacks
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -198,16 +192,11 @@ def main():
         max_epochs=epochs,
         callbacks=[checkpoint_callback, checkpoint_callback_epoch, lr_monitor],
         logger=csv_logger,
-        log_every_n_steps=10,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         devices=1
     )
     trainer.fit(model, train_loader, val_loader)
-    training_time = time.time() - start_time
-
-    # Log training time
-    csv_logger.log_hyperparams({"training_time": training_time})
-    print(f"Training completed in {training_time:.2f} seconds")
+    print(f"Training completed in {(time.time() - start_time) / 3600:.2f} hours")
 
 
 if __name__ == "__main__":

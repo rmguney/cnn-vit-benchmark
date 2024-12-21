@@ -56,7 +56,7 @@ def main():
         subprocess.run([python_executable, "src/models/train_mobilenet_v2.py"], env=os.environ)
     elif choice == "7":
         print("Benchmarking Models...")
-        subprocess.run([python_executable, "src/benchmark_models.py"], env=os.environ)
+        subprocess.run([python_executable, "src/models/benchmark_models.py"], env=os.environ)
     elif choice == "8":
         print("Exiting...")
         exit()

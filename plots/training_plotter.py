@@ -6,7 +6,7 @@ output_dir = 'C:/code/583 Computer Vision/classification/plots/output/'
 os.makedirs(output_dir, exist_ok=True)
 
 # Load the uploaded CSV file
-metrics_file_path = '../logs/EfficientNetB0ForClassification_2024-12-21_10-47-18/version_0/metrics.csv'
+metrics_file_path = '../logs/EfficientNetB0ForClassification_2024-12-23_01-49-06/version_0/metrics.csv'
 metrics_data = pd.read_csv(metrics_file_path)
 
 # Filter rows for training and validation based on the presence of metrics
@@ -41,12 +41,14 @@ def custom_plot_style_with_larger_figsize():
         'xtick.color': 'white',
         'ytick.color': 'white',
         'grid.color': 'white',
+        'grid.linestyle': '--',  # Dashed grid lines
         'axes.labelcolor': 'white',
         'font.size': 14,  # Larger font size
         'legend.fontsize': 12,  # Larger legend font size
         'lines.linewidth': 2,  # Thicker lines
         'lines.markersize': 8  # Larger markers
     })
+
 
 # Apply the updated style
 custom_plot_style_with_larger_figsize()
@@ -58,6 +60,7 @@ plt.plot(epochs, train_loss, marker='o', linestyle='-', label="Training Loss")
 plt.plot(epochs, val_loss, marker='x', linestyle='--', label="Validation Loss")
 plt.xlabel("Epochs")
 plt.ylabel("Loss")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_training_validation_loss_larger.png", facecolor='#212121')
@@ -69,6 +72,7 @@ plt.plot(epochs, train_precision, marker='o', linestyle='-', label="Training Pre
 plt.plot(epochs, val_precision, marker='x', linestyle='--', label="Validation Precision")
 plt.xlabel("Epochs")
 plt.ylabel("Precision")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_precision_larger.png", facecolor='#212121')
@@ -80,6 +84,7 @@ plt.plot(epochs, train_recall, marker='o', linestyle='-', label="Training Recall
 plt.plot(epochs, val_recall, marker='x', linestyle='--', label="Validation Recall")
 plt.xlabel("Epochs")
 plt.ylabel("Recall")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_recall_larger.png", facecolor='#212121')
@@ -91,6 +96,7 @@ plt.plot(epochs, train_f1, marker='o', linestyle='-', label="Training F1 Score")
 plt.plot(epochs, val_f1, marker='x', linestyle='--', label="Validation F1 Score")
 plt.xlabel("Epochs")
 plt.ylabel("F1 Score")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_f1_score_larger.png", facecolor='#212121')
@@ -102,6 +108,7 @@ plt.plot(epochs, train_map, marker='o', linestyle='-', label="Training mAP")
 plt.plot(epochs, val_map, marker='x', linestyle='--', label="Validation mAP")
 plt.xlabel("Epochs")
 plt.ylabel("mAP")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_map_larger.png", facecolor='#212121')
@@ -112,6 +119,7 @@ plt.figure(figsize=(12, 8))  # Larger figure size
 plt.plot(epochs, grad_norm, marker='o', linestyle='-', label="Gradient Norm")
 plt.xlabel("Epochs")
 plt.ylabel("Gradient Norm")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_gradient_norm_larger.png", facecolor='#212121')
@@ -122,6 +130,7 @@ plt.figure(figsize=(12, 8))  # Larger figure size
 plt.plot(epochs, avg_grad_norm, marker='o', linestyle='-', label="Average Gradient Norm")
 plt.xlabel("Epochs")
 plt.ylabel("Average Gradient Norm")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_avg_grad_norm_larger.png", facecolor='#212121')
@@ -132,6 +141,7 @@ plt.figure(figsize=(12, 8))  # Larger figure size
 plt.plot(epochs, class_0_ap, marker='o', linestyle='-', label="Class 0 AP")
 plt.xlabel("Epochs")
 plt.ylabel("Class 0 AP")
+plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.savefig(f"{output_dir}metrics_class_0_ap_larger.png", facecolor='#212121')

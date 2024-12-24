@@ -194,7 +194,7 @@ def main():
 
     # Load state_dict from checkpoint
     deit_model_path = './saved_models/DeiTTinyForClassification_2024-11-27_22-38-14_best.ckpt'
-    efficientnet_model_path = './saved_models/EfficientNetB0ForClassification_2024-12-21_10-47-18_best.ckpt'
+    efficientnet_model_path = './saved_models/EfficientNetB0ForClassification_2024-12-23_01-49-06_best.ckpt'
 
     deit_checkpoint = torch.load(deit_model_path, map_location=device)
     efficientnet_checkpoint = torch.load(efficientnet_model_path, map_location=device)
